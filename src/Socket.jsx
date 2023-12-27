@@ -9,7 +9,7 @@ const Socket=()=>{
   const [userName, setUserName] = useState('')
   const [userNameInput, setUserNameInput] = useState('')
   useEffect(() => {
-    const socketInstance = io('http://localhost:3000')
+    const socketInstance = io('http://websocket-sample.azurewebsites.net')
     socketInstance.on('connect', () => {
       // setText(socketInstance.id)
     })
