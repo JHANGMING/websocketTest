@@ -10,7 +10,7 @@ const Socket=()=>{
 
   useEffect(() => {
     const newConnection = new HubConnectionBuilder()
-      .withUrl('https://localhost/signalR.aspx') // 替换为实际的Hub URL
+      .withUrl('https://localhost:44339/signalR') // 替换为实际的Hub URL
       .withAutomaticReconnect()
       .build()
 
