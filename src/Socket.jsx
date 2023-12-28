@@ -1,58 +1,58 @@
-
 import { useState, useEffect } from 'react'
 import { HubConnectionBuilder } from '@microsoft/signalr'
 
-const Socket=()=>{
-  const [connection, setConnection] = useState(null);
-  const [currentMessage, setCurrentMessage] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [userName] = useState("Anonymous");  // 添加用户名状态
+const Socket = () => {
+  const [connection, setConnection] = useState(null)
+  const [currentMessage, setCurrentMessage] = useState('')
+  const [messages, setMessages] = useState([])
+  const [userName] = useState('Anonymous') // 添加用户名状态
 
   useEffect(() => {
     const newConnection = new HubConnectionBuilder()
-      .withUrl('https://localhost:44339/syscomHub1') // 替换为实际的Hub URL
+      .withUrl('https://localhost:44339/SyscomHub1') // 替换为实际的Hub URL
       .withAutomaticReconnect()
       .build()
 
-    setConnection(newConnection);
-  }, []);
+    setConnection(newConnection)
+  }, [])
 
   useEffect(() => {
     if (connection) {
-      connection.start()
+      connection
+        .start()
         .then(() => {
-          console.log('Connected to the hub');
+          console.log('Connected to the hub')
 
           // 加入房间，传入用户名
-          connection.invoke('onJoinRoom', { Sid: connection.connectionId, Name: userName, ConnectedTime: new Date().toISOString() });
+          connection.invoke('onJoinRoom', { Sid: connection.connectionId, Name: userName, ConnectedTime: new Date().toISOString() })
 
           // 监听服务器发送的消息
           connection.on('getOnlineList', (userList) => {
             // 处理在线用户列表
-            console.log("Online Users:", userList);
-          });
+            console.log('Online Users:', userList)
+          })
 
           connection.on('updateDocContent', (doc) => {
             // 处理文档内容更新
-            console.log("Document Data:", doc);
-            setMessages(messages => [...messages, doc.content]);
-          });
+            console.log('Document Data:', doc)
+            setMessages((messages) => [...messages, doc.content])
+          })
         })
-        .catch(err => console.error('SignalR Connection Error: ', err));
+        .catch((err) => console.error('SignalR Connection Error: ', err))
     }
-  }, [connection, userName]);  // 依赖项中添加 userName
+  }, [connection, userName]) // 依赖项中添加 userName
 
   const sendMessage = async () => {
     if (currentMessage.trim() !== '' && connection) {
       try {
         // 发送编辑文档的请求
-        await connection.invoke('EditDoc', { content: currentMessage, lastEditName: userName });
-        setCurrentMessage('');
+        await connection.invoke('EditDoc', { content: currentMessage, lastEditName: userName })
+        setCurrentMessage('')
       } catch (err) {
-        console.error(err);
+        console.error(err)
       }
     }
-  };
+  }
 
   return (
     <div className="p-6">
@@ -68,7 +68,6 @@ const Socket=()=>{
       </ul>
     </div>
   )
-};
-
+}
 
 export default Socket
