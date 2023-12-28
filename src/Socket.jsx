@@ -1,101 +1,74 @@
 
-import { useCallback, useEffect, useState } from "react"
-import { io } from "socket.io-client"
+import { useState, useEffect } from 'react'
+import { HubConnectionBuilder } from '@microsoft/signalr'
 
 const Socket=()=>{
-  const [text, setText] = useState([])
-  const [message, setMessage] = useState('')
-  const [socket, setSocket] = useState(null)
-  const [userName, setUserName] = useState('')
-  const [userNameInput, setUserNameInput] = useState('')
-  useEffect(() => {
-    const socketInstance = io('http://localhost:3000')
-    socketInstance.on('connect', () => {
-      // setText(socketInstance.id)
-    })
-    setSocket(socketInstance)
-    socketInstance.on('receive-message', (message) => {
-      const { id } = message
-      if (!text.some((msg) => msg.id === id)) {
-        setText((prev) => [...prev, message])
-      }
-    })
+  const [connection, setConnection] = useState(null);
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [userName] = useState("Anonymous");  // 添加用户名状态
 
-    return () => {
-      socketInstance.disconnect()
-      socketInstance.off('receive-message')
-      socketInstance.off('connect')
-    }
-  }, [])
-  const sendMessage = useCallback(() => {
-    if (socket && userName && message.trim()) {
-      const newMessage = {
-        userName,
-        message,
-        id: Date.now(),
-      }
-      socket.emit('send-message', newMessage)
-      setMessage('')
-    }
-  }, [socket, message, userName])
-  const handleSetUserName = () => {
-    const trimmedName = userNameInput.trim()
-    if (trimmedName) {
-      setUserName(trimmedName)
-      if (socket) {
-        socket.emit('send-message', {
-          userName: 'System',
-          message: `${trimmedName}進入聊天室`,
-          id: Date.now(),
-          system: true, 
-        })
-      }
-    }
-  }
   useEffect(() => {
-    const messagesContainer = document.querySelector('.messages-container')
-    if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight
+    const newConnection = new HubConnectionBuilder()
+      .withUrl('https://localhost:44339/signalR.aspx') // 替换为实际的Hub URL
+      .withAutomaticReconnect()
+      .build()
+
+    setConnection(newConnection);
+  }, []);
+
+  useEffect(() => {
+    if (connection) {
+      connection.start()
+        .then(() => {
+          console.log('Connected to the hub');
+
+          // 加入房间，传入用户名
+          connection.invoke('onJoinRoom', { Sid: connection.connectionId, Name: userName, ConnectedTime: new Date().toISOString() });
+
+          // 监听服务器发送的消息
+          connection.on('getOnlineList', (userList) => {
+            // 处理在线用户列表
+            console.log("Online Users:", userList);
+          });
+
+          connection.on('updateDocContent', (doc) => {
+            // 处理文档内容更新
+            console.log("Document Data:", doc);
+            setMessages(messages => [...messages, doc.content]);
+          });
+        })
+        .catch(err => console.error('SignalR Connection Error: ', err));
     }
-  }, [text]) 
+  }, [connection, userName]);  // 依赖项中添加 userName
+
+  const sendMessage = async () => {
+    if (currentMessage.trim() !== '' && connection) {
+      try {
+        // 发送编辑文档的请求
+        await connection.invoke('EditDoc', { content: currentMessage, lastEditName: userName });
+        setCurrentMessage('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
   return (
-    <div className="p-8">
-      <ul className="messages-container flex flex-col w-[500px] h-[300px] border border-black p-4 overflow-auto">
-        {text.map((item) => {
-          const { id, userName: messageUser, message, system } = item
-          if (system) {
-            return (
-              <li key={id} className="text-sm text-gray-500">
-                {message}
-              </li>
-            )
-          } else {
-            const isOwnMessage = messageUser === userName
-            const messageClass = isOwnMessage ? 'bg-blue-300' : 'bg-green-300'
-            const messageDisplay = isOwnMessage ? 'self-end' : ''
-            return (
-              <li key={id} className={`${messageDisplay} mb-2`}>
-                <span className={`border rounded-md px-2 ${messageClass}`}>
-                  {messageUser}：{message}
-                </span>
-              </li>
-            )
-          }
-        })}
-      </ul>
-      <p>your name:{userName}</p>
-      <div className="">
-        <input type="text" placeholder="Name" className="border rounded-sm m-2 pl-2 " value={userNameInput} onChange={(e) => setUserNameInput(e.target.value)} />
-        <button type="button" onClick={handleSetUserName} className="border rounded-lg px-2 py-1 hover:bg-black hover:text-white">
-          Enter
-        </button>
-      </div>
-      <input type="text" className="border rounded-sm m-2 pl-2" placeholder="message" value={message} onChange={(e) => setMessage(e.target.value)} />
-      <button type="button" onClick={sendMessage} className="border rounded-lg px-2 py-1 hover:bg-black hover:text-white">
-        send
+    <div className="p-6">
+      <h1>Message App</h1>
+      <input type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Type your message here" className="pl-2 mt-4 border-2 border-black rounded-md w-[200px]" />
+      <button onClick={sendMessage} className="border border-black px-2 py-1 ml-2 rounded-md hover:bg-black hover:text-white">
+        Send
       </button>
+      <ul>
+        {messages.map((msg, index) => (
+          <li key={index}>{msg}</li>
+        ))}
+      </ul>
     </div>
   )
-}
+};
+
 
 export default Socket
