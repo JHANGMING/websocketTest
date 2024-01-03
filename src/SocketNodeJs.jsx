@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { io } from "socket.io-client"
 
-const Socket=()=>{
+const SocketNodeJs = () => {
   const [text, setText] = useState([])
   const [message, setMessage] = useState('')
   const [socket, setSocket] = useState(null)
@@ -47,7 +47,7 @@ const Socket=()=>{
           userName: 'System',
           message: `${trimmedName}進入聊天室`,
           id: Date.now(),
-          system: true, 
+          system: true,
         })
       }
     }
@@ -57,7 +57,7 @@ const Socket=()=>{
     if (messagesContainer) {
       messagesContainer.scrollTop = messagesContainer.scrollHeight
     }
-  }, [text]) 
+  }, [text])
   return (
     <div className="p-8">
       <ul className="messages-container flex flex-col w-[500px] h-[300px] border border-black p-4 overflow-auto">
@@ -98,4 +98,4 @@ const Socket=()=>{
   )
 }
 
-export default Socket
+export default SocketNodeJs
