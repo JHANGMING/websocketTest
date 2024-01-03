@@ -82,7 +82,7 @@
 
 // export default SignalRComponent
 import { useState, useEffect } from 'react'
-import { HubConnectionBuilder } from '@aspnet/signalr'
+import { HubConnectionBuilder } from '@microsoft/signalr'
 
 const SignalRComponent = () => {
   const [connection, setConnection] = useState(null)
@@ -103,7 +103,7 @@ const SignalRComponent = () => {
         // .withUrl('https://localhost:44341/signalr')
         // .build();
 
-        const newConnection = new HubConnectionBuilder().withUrl('https://localhost:44341/signalr').build()
+        const newConnection = new HubConnectionBuilder().withUrl('https://localhost:44341/signalr').withAutomaticReconnect().build()
 
         console.log(newConnection)
 
