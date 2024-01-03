@@ -103,7 +103,7 @@ const SignalRComponent = () => {
         // .withUrl('https://localhost:44341/signalr')
         // .build();
 
-        const newConnection = new HubConnectionBuilder().withUrl('https://localhost:44341/signalr').withAutomaticReconnect().build()
+        const newConnection = new HubConnectionBuilder().withUrl('https://localhost:44341/signalr').build()
 
         console.log(newConnection)
 
