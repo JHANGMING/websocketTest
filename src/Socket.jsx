@@ -82,7 +82,7 @@
 
 // export default SignalRComponent
 import { useState, useEffect } from 'react'
-import { HubConnectionBuilder } from '@microsoft/signalr'
+import { HubConnectionBuilder } from '@aspnet/signalr'
 
 const SignalRComponent = () => {
   const [connection, setConnection] = useState(null)
