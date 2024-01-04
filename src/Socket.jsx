@@ -82,11 +82,11 @@
 
 // export default SignalRComponent
 import { useState, useEffect } from 'react'
-import { HubConnectionBuilder } from '@aspnet/signalr'
+import { HubConnectionBuilder, HttpTransportType } from '@microsoft/signalr'
 
 const SignalRComponent = () => {
   const [connection, setConnection] = useState(null)
-  const [userName, setUserName] = useState('')
+  const [userName, setUserName] = useState('jelly')
   const [content, setContent] = useState('')
   const [lastEditTime, setLastEditTime] = useState('')
   const [lastEditUser, setLastEditUser] = useState('')
@@ -96,14 +96,26 @@ const SignalRComponent = () => {
     const configureSignalR = async () => {
       try {
         // 请求用户名
-        setUserName(name || 'Anonymous')
+
 
         // 创建 SignalR 连接
         // const newConnection = new HubConnectionBuilderHubConnectionBuilder()
         // .withUrl('https://localhost:44341/signalr')
         // .build();
 
-        const newConnection = new HubConnectionBuilder().withUrl('https://localhost:44341/signalr').build()
+        const newConnection = new HubConnectionBuilder()
+          .withUrl('https://localhost:7291/chathub', {
+            accessTokenFactory: () => {
+              if (typeof bearerToken !== 'undefined') {
+                return bearerToken.getToken()
+              }
+              return null // 如果未提供存取權杖，返回 null 或不提供此選項
+            },
+            skipNegotiation: true,
+            transport: HttpTransportType.WebSockets,
+          })
+          .withAutomaticReconnect()
+          .build()
 
         console.log(newConnection)
 
