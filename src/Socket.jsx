@@ -1,176 +1,54 @@
-// import { useState, useEffect } from 'react'
-// import { HubConnectionBuilder } from '@microsoft/signalr'
+import { useState, useRef } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
 
-// const SignalRComponent = () => {
-//   const [connection, setConnection] = useState(null)
-//   const [userName, setUserName] = useState('')
-//   const [content, setContent] = useState('')
-//   const [lastEditTime, setLastEditTime] = useState('')
-//   const [lastEditUser, setLastEditUser] = useState('')
-//   const [onlineUsers, setOnlineUsers] = useState([])
+const BarcodeScanner = () => {
+  const [scannedData, setScannedData] = useState('No result');
+  const [isScanning, setIsScanning] = useState(false);
+  const html5QrCodeRef = useRef(null);
 
-// useEffect(() => {
-//   if (!connection) {
-//     // 只在尚未建立连接时请求用户名
-//     const name = window.prompt('请输入用户名')
-//     setUserName(name || 'Anonymous')
+  const startScanning = () => {
+    const html5QrCode = new Html5Qrcode('reader');
+    html5QrCodeRef.current = html5QrCode;
+    const qrCodeSuccessCallback = (decodedText) => {
+      setScannedData(decodedText);
+      stopScanning(); // 偵測到一次條碼後自動停止掃描
+    };
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-//     // 创建SignalR连接
-//     const newConnection = new HubConnectionBuilder()
-//       .withUrl('https://localhost:44339/signalR.aspx') // 更新为实际的SignalR服务端点
-//       .configureLogging.withAutomaticReconnect()
-//       .build()
-//     console.log(newConnection)
-//     setConnection(newConnection)
-//   }
-// }, [connection])
-
-//   useEffect(() => {
-//     if (connection) {
-//       // 启动连接
-//       connection
-//         .start()
-//         .then(() => {
-//           console.log('Connected!')
-
-//           // 监听事件
-//           connection.on('getOnlineList', (userList) => {
-//             setOnlineUsers(Object.values(userList))
-//           })
-
-//           connection.on('updateDocContent', (doc) => {
-//             setLastEditTime(doc.lastEditTime)
-//             setLastEditUser(doc.lastEditName)
-//             setContent(doc.content)
-//           })
-
-//           // 加入房间
-//           connection.invoke('onJoinRoom', { Name: userName })
-//         })
-//         .catch((err) => console.error('Connection failed: ', err))
-//     }
-//   }, [connection, userName])
-
-//   const sendContent = () => {
-//     connection.invoke('EditDoc', {
-//       lastEditId: connection.connectionId,
-//       lastEditName: userName,
-//       content: content,
-//     })
-//   }
-
-//   return (
-//     <div className="p-6">
-//       <h1>Hello {userName}</h1>
-//       <ul>
-//         {onlineUsers.map((user, index) => (
-//           <li key={index}>{user.Name}</li>
-//         ))}
-//       </ul>
-//       <span>{lastEditTime}</span>
-//       <span>{lastEditUser}</span>
-//       <div className="edit-area">
-//         <label>{content}</label>
-//         <input type="text" value={content} onChange={(e) => setContent(e.target.value)} className="pl-2 mt-4 border-2 border-black rounded-md w-[200px]" />
-//         <button type="button" onClick={sendContent} className="border border-black px-2 py-1 ml-2 rounded-md hover:bg-black hover:text-white">
-//           Send
-//         </button>
-//       </div>
-//     </div>
-//   )
-// }
-
-// export default SignalRComponent
-import { useState, useEffect } from 'react'
-//import * as signalR from '@aspnet/signalr';
-import { HubConnectionBuilder, HttpTransportType, LogLevel } from '@aspnet/signalr'
-//import {HubConnectionBuilder,HttpTransportType} from '@aspnet/signalr';
-
-const SignalRComponent = () => {
-  const [connection, setConnection] = useState(null)
-  const [userName, setUserName] = useState('')
-  const [content, setContent] = useState('')
-  const [lastEditTime, setLastEditTime] = useState('')
-  const [lastEditUser, setLastEditUser] = useState('')
-  const [onlineUsers, setOnlineUsers] = useState([])
-
-  useEffect(() => {
-    //初始化 SignalR 連接
-    const newConnection = new HubConnectionBuilder()
-      .configureLogging(LogLevel.Debug)
-      .withUrl(
-        'https://localhost:44341/signalr', // 更新為實際的 SignalR 服務端點
-        {
-          accessTokenFactory: () => {
-            if (typeof bearerToken !== 'undefined') {
-              return bearerToken.getToken()
-            }
-            return null // 如果未提供存取權杖，返回 null 或不提供此選項
-          },
-          skipNegotiation: true,
-          transport: HttpTransportType.WebSockets,
-        }
-      )
-      .build()
-
-    newConnection.on('getOnlineList', (userList) => {
-      setOnlineUsers(Object.values(userList))
-    })
-
-    newConnection.on('updateDocContent', (doc) => {
-      setLastEditTime(doc.lastEditTime)
-      setLastEditUser(doc.lastEditName)
-      setContent(doc.content)
-    })
-
-    //啟動連接
-    newConnection
-      .start()
+    html5QrCode
+      .start({ facingMode: 'environment' }, config, qrCodeSuccessCallback)
       .then(() => {
-        console.log('Connected!')
-        //請求用戶名
-        const name = window.prompt('請輸入用戶名')
-        setUserName(name || 'Anonymous')
-
-        //加入房間
-        newConnection.invoke('onJoinRoom', { Name: userName })
+        setIsScanning(true);
       })
-      .catch((error) => {
-        console.error('Connection failed:', error)
-      })
+      .catch((err) => {
+        console.error('Failed to start html5QrCode', err);
+      });
+  };
 
-    //更新狀態
-    setConnection(newConnection)
-  }, []) // 注意：這裡的空 dependency array 確保只在組件掛載時初始化一次
-
-  const sendContent = () => {
-    //發送內容
-    connection.invoke('EditDoc', {
-      lastEditId: connection.connectionId,
-      lastEditName: userName,
-      content: content,
-    })
-  }
+  const stopScanning = () => {
+    if (html5QrCodeRef.current) {
+      html5QrCodeRef.current
+        .stop()
+        .then(() => {
+          html5QrCodeRef.current.clear();
+          setIsScanning(false);
+        })
+        .catch((err) => {
+          console.error('Failed to stop html5QrCode', err);
+        });
+    }
+  };
 
   return (
-    <div className="p-6">
-      <h1>Hello {userName}</h1>
-      <ul>
-        {onlineUsers.map((user, index) => (
-          <li key={index}>{user.Name}</li>
-        ))}
-      </ul>
-      <span>{lastEditTime}</span>
-      <span>{lastEditUser}</span>
-      <div className="edit-area">
-        <label>{content}</label>
-        <input type="text" value={content} onChange={(e) => setContent(e.target.value)} className="pl-2 mt-4 border-2 border-black rounded-md w-[200px]" />
-        <button type="button" onClick={sendContent} className="border border-black px-2 py-1 ml-2 rounded-md hover:bg-black hover:text-white">
-          Send
-        </button>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <h1>Barcode Scanner</h1>
+      <div id="reader" style={{ width: '500px', height: '500px', display: isScanning ? 'block' : 'none' }}></div>
+      <button className='bg-slate-400 p-4 rounded-md hover:text-white' onClick={isScanning ? stopScanning : startScanning} style={{ marginTop: '20px' }}>
+        {isScanning ? 'Stop Scanning' : 'Start Scanning'}
+      </button>
+      <p style={{ marginTop: '20px', fontSize: '20px', fontWeight: 'bold' }}>{scannedData}</p>
     </div>
-  )
-}
+  );
+};
 
-export default SignalRComponent
+export default BarcodeScanner;
